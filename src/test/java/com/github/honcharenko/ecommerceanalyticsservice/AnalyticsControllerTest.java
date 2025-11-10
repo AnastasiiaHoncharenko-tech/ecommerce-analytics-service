@@ -1,35 +1,37 @@
 package com.github.honcharenko.ecommerceanalyticsservice;
 
-import com.github.honcharenko.ecommerceanalyticsservice.repository.AnalyticsRepository;
-import org.jooq.*;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 import static com.github.anastasiia.ecommerceanalyticsservice.jooq.Tables.*;
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
+@AutoConfigureMockMvc
 @Testcontainers
-public class AnalyticsRepositoryTest {
+@WithMockUser
+public class AnalyticsControllerTest {
 
-    @SuppressWarnings("resource")
     @Container
+    @SuppressWarnings("resource")
     public static PostgreSQLContainer<?> postgresContainer = new PostgreSQLContainer<>("postgres:16")
             .withDatabaseName("test-db")
             .withUsername("test")
@@ -45,20 +47,20 @@ public class AnalyticsRepositoryTest {
     }
 
     @Autowired
-    private DSLContext dsl;
+    private MockMvc mockMvc;
 
     @Autowired
-    private AnalyticsRepository analyticsRepository;
+    private DSLContext dsl;
 
     @BeforeEach
-    void insertPredictableCategorySales() {
+    void setUp() {
         dsl.truncate(ORDER_ITEMS).restartIdentity().cascade().execute();
         dsl.truncate(ORDERS).restartIdentity().cascade().execute();
         dsl.truncate(PRODUCTS).restartIdentity().cascade().execute();
         dsl.truncate(CUSTOMERS).restartIdentity().cascade().execute();
         dsl.truncate(ORDER_STATUSES).restartIdentity().cascade().execute();
 
-        // statuses
+        // Statuses
         dsl.insertInto(ORDER_STATUSES)
                 .set(ORDER_STATUSES.STATUS_NAME, "Processing")
                 .execute();
@@ -142,89 +144,59 @@ public class AnalyticsRepositoryTest {
     }
 
     @Test
-    public void testGetSalaryByCategory_ReturnsCorrectTotal() {
+    public void testGetSalesByCategory_ReturnsJsonArray() throws Exception {
 
-        BigDecimal expectedElectronicsTotal = new BigDecimal("1150.00");
-        BigDecimal expectedBooksTotal = new BigDecimal("100.00");
-
-        Result<Record2<String, BigDecimal>> result = analyticsRepository.getSalesByCategory();
-
-        Map<String, BigDecimal> salesMap = result
-                .stream()
-                .collect(Collectors.toMap(
-                        Record2::value1,
-                        Record2::value2
-        ));
-
-        assertThat(salesMap).hasSize(2);
-        assertThat(salesMap).containsKey("Electronics");
-        assertThat(salesMap).containsKey("Books");
-
-        assertThat(salesMap.get("Electronics")).isEqualByComparingTo(expectedElectronicsTotal);
-        assertThat(salesMap.get("Books")).isEqualByComparingTo(expectedBooksTotal);
+        mockMvc.perform(get("/analytics/salesByCategory"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].category").value("Electronics"))
+                .andExpect(jsonPath("$[0].totalSales").value(1150.00))
+                .andExpect(jsonPath("$[1].category").value("Books"))
+                .andExpect(jsonPath("$[1].totalSales").value(100.00));
     }
 
     @Test
-    public void testGetTopSellingProducts_ReturnsProductsOrderedByQuantity() {
+    public void testGetTopSellingProducts_ReturnsJsonArray() throws Exception {
 
-        Result<Record3<Integer, String, BigDecimal>> result = analyticsRepository.getTopSellingProducts();
-
-        assertThat(result).hasSize(3);
-
-
-        assertThat(result.get(0).value2()).isEqualTo("JOOQ Guide");
-        assertThat(result.get(0).value3()).isEqualByComparingTo(new BigDecimal("4"));
-
-        assertThat(result.get(1).value2()).isEqualTo("Mouse");
-        assertThat(result.get(1).value3()).isEqualByComparingTo(new BigDecimal("2"));
-
-        assertThat(result.get(2).value2()).isEqualTo("Laptop");
-        assertThat(result.get(2).value3()).isEqualByComparingTo(new BigDecimal("1"));
+        mockMvc.perform(get("/analytics/topSellingProducts"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].productName").value("JOOQ Guide"))
+                .andExpect(jsonPath("$[0].totalQuantitySold").value(4))
+                .andExpect(jsonPath("$[1].productName").value("Mouse"))
+                .andExpect(jsonPath("$[1].totalQuantitySold").value(2))
+                .andExpect(jsonPath("$[2].productName").value("Laptop"))
+                .andExpect(jsonPath("$[2].totalQuantitySold").value(1));
     }
 
     @Test
-    public void testGetTopSpenders_ReturnsCustomersOrderedBySpend() {
+    public void testGetTopSpenders_ReturnsJsonArray() throws Exception {
 
-        Result<Record5<Integer, String, String, String, BigDecimal>> result = analyticsRepository.getTopSpenders();
-
-        assertThat(result).hasSize(1);
-
-        Record5<Integer, String, String, String, BigDecimal> topSpender = result.get(0);
-
-        assertThat(topSpender.value2()).isEqualTo("test@user.com");
-        assertThat(topSpender.value3()).isEqualTo("Test");
-        assertThat(topSpender.value4()).isEqualTo("User");
-
-        assertThat(topSpender.value5()).isEqualByComparingTo(new BigDecimal("1100.00"));
+        mockMvc.perform(get("/analytics/topSpenders"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].email").value("test@user.com"))
+                .andExpect(jsonPath("$[0].fullName").value("Test User"))
+                .andExpect(jsonPath("$[0].totalSpend").value(1100.00));
     }
 
     @Test
-    public void testGetStatusSummary_ReturnsOrderCountByStatus() {
+    public void testGetStatusSummary_ReturnsJsonArray() throws Exception {
 
-        Result<Record2<String, Long>> result = analyticsRepository.getStatusSummary();
-
-        Map<String, Long> statusMap = result
-                .stream()
-                .collect(Collectors.toMap(
-                        Record2::value1,
-                        Record2::value2
-                ));
-
-        assertThat(statusMap).hasSize(2);
-        assertThat(statusMap).containsKey("Canceled");
-        assertThat(statusMap).containsKey("Delivered");
-
-        assertThat(statusMap.get("Canceled")).isEqualTo(1L);
-        assertThat(statusMap.get("Delivered")).isEqualTo(1L);
+        mockMvc.perform(get("/analytics/statusSummary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2));
     }
 
     @Test
-    public void testGetAverageOrderValue_ReturnsCorrectAverage() {
+    public void testGetAverageOrderValue_ReturnsJsonObject() throws Exception {
 
-        Record1<BigDecimal> result = analyticsRepository.getAverageOrderValue();
-
-        BigDecimal expectedAverage = new BigDecimal("625.00");
-
-        assertThat(result.value1()).isEqualByComparingTo(expectedAverage);
+        mockMvc.perform(get("/analytics/averageOrderValue"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.averageOrderValue").value(625.00));
     }
 }

@@ -1,7 +1,8 @@
 package com.github.honcharenko.ecommerceanalyticsservice;
 
-import com.github.honcharenko.ecommerceanalyticsservice.repository.AnalyticsRepository;
-import org.jooq.*;
+import com.github.honcharenko.ecommerceanalyticsservice.DTO.*;
+import com.github.honcharenko.ecommerceanalyticsservice.service.AnalyticsService;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,18 +16,16 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
-import java.util.Map;
+import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Collectors;
 
 import static com.github.anastasiia.ecommerceanalyticsservice.jooq.Tables.*;
 import static org.assertj.core.api.Assertions.assertThat;
 
-
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.NONE)
 @ActiveProfiles("test")
 @Testcontainers
-public class AnalyticsRepositoryTest {
+public class AnalyticsServiceTest {
 
     @SuppressWarnings("resource")
     @Container
@@ -48,17 +47,17 @@ public class AnalyticsRepositoryTest {
     private DSLContext dsl;
 
     @Autowired
-    private AnalyticsRepository analyticsRepository;
+    private AnalyticsService analyticsService;
 
     @BeforeEach
-    void insertPredictableCategorySales() {
+    void setUp() {
         dsl.truncate(ORDER_ITEMS).restartIdentity().cascade().execute();
         dsl.truncate(ORDERS).restartIdentity().cascade().execute();
         dsl.truncate(PRODUCTS).restartIdentity().cascade().execute();
         dsl.truncate(CUSTOMERS).restartIdentity().cascade().execute();
         dsl.truncate(ORDER_STATUSES).restartIdentity().cascade().execute();
 
-        // statuses
+        // Statuses
         dsl.insertInto(ORDER_STATUSES)
                 .set(ORDER_STATUSES.STATUS_NAME, "Processing")
                 .execute();
@@ -142,89 +141,63 @@ public class AnalyticsRepositoryTest {
     }
 
     @Test
-    public void testGetSalaryByCategory_ReturnsCorrectTotal() {
+    public void testGetSalesByCategory_ReturnsListOfDTOs() {
 
-        BigDecimal expectedElectronicsTotal = new BigDecimal("1150.00");
-        BigDecimal expectedBooksTotal = new BigDecimal("100.00");
+        List<SalesByCategoryDTO> result = analyticsService.getSalesByCategory();
 
-        Result<Record2<String, BigDecimal>> result = analyticsRepository.getSalesByCategory();
-
-        Map<String, BigDecimal> salesMap = result
-                .stream()
-                .collect(Collectors.toMap(
-                        Record2::value1,
-                        Record2::value2
-        ));
-
-        assertThat(salesMap).hasSize(2);
-        assertThat(salesMap).containsKey("Electronics");
-        assertThat(salesMap).containsKey("Books");
-
-        assertThat(salesMap.get("Electronics")).isEqualByComparingTo(expectedElectronicsTotal);
-        assertThat(salesMap.get("Books")).isEqualByComparingTo(expectedBooksTotal);
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getCategory()).isEqualTo("Electronics");
+        assertThat(result.get(0).getTotalSales()).isEqualByComparingTo(new BigDecimal("1150.00"));
+        assertThat(result.get(1).getCategory()).isEqualTo("Books");
+        assertThat(result.get(1).getTotalSales()).isEqualByComparingTo(new BigDecimal("100.00"));
     }
 
     @Test
-    public void testGetTopSellingProducts_ReturnsProductsOrderedByQuantity() {
+    public void testGetTopSellingProducts_ReturnsListOfDTOs() {
 
-        Result<Record3<Integer, String, BigDecimal>> result = analyticsRepository.getTopSellingProducts();
+        List<TopSellingProductsDTO> result = analyticsService.getTopSellingProducts();
 
         assertThat(result).hasSize(3);
 
+        assertThat(result.get(0).getProductName()).isEqualTo("JOOQ Guide");
+        assertThat(result.get(0).getTotalQuantitySold()).isEqualTo(4L);
 
-        assertThat(result.get(0).value2()).isEqualTo("JOOQ Guide");
-        assertThat(result.get(0).value3()).isEqualByComparingTo(new BigDecimal("4"));
+        assertThat(result.get(1).getProductName()).isEqualTo("Mouse");
+        assertThat(result.get(1).getTotalQuantitySold()).isEqualTo(2L);
 
-        assertThat(result.get(1).value2()).isEqualTo("Mouse");
-        assertThat(result.get(1).value3()).isEqualByComparingTo(new BigDecimal("2"));
-
-        assertThat(result.get(2).value2()).isEqualTo("Laptop");
-        assertThat(result.get(2).value3()).isEqualByComparingTo(new BigDecimal("1"));
+        assertThat(result.get(2).getProductName()).isEqualTo("Laptop");
+        assertThat(result.get(2).getTotalQuantitySold()).isEqualTo(1L);
     }
 
     @Test
-    public void testGetTopSpenders_ReturnsCustomersOrderedBySpend() {
+    public void testGetTopSenders_ReturnsListOfDTOs() {
 
-        Result<Record5<Integer, String, String, String, BigDecimal>> result = analyticsRepository.getTopSpenders();
+        List<TopSendersDTO> result = analyticsService.getTopSenders();
 
         assertThat(result).hasSize(1);
-
-        Record5<Integer, String, String, String, BigDecimal> topSpender = result.get(0);
-
-        assertThat(topSpender.value2()).isEqualTo("test@user.com");
-        assertThat(topSpender.value3()).isEqualTo("Test");
-        assertThat(topSpender.value4()).isEqualTo("User");
-
-        assertThat(topSpender.value5()).isEqualByComparingTo(new BigDecimal("1100.00"));
+        assertThat(result.get(0).getEmail()).isEqualTo("test@user.com");
+        assertThat(result.get(0).getFullName()).isEqualTo("Test User");
+        assertThat(result.get(0).getTotalSpend()).isEqualByComparingTo(new BigDecimal("1100.00"));
     }
 
     @Test
-    public void testGetStatusSummary_ReturnsOrderCountByStatus() {
+    public void testGetStatusSummary_ReturnsListOfDTOs() {
 
-        Result<Record2<String, Long>> result = analyticsRepository.getStatusSummary();
+        List<StatusSummaryDTO> result = analyticsService.getStatusSummary();
 
-        Map<String, Long> statusMap = result
-                .stream()
-                .collect(Collectors.toMap(
-                        Record2::value1,
-                        Record2::value2
-                ));
-
-        assertThat(statusMap).hasSize(2);
-        assertThat(statusMap).containsKey("Canceled");
-        assertThat(statusMap).containsKey("Delivered");
-
-        assertThat(statusMap.get("Canceled")).isEqualTo(1L);
-        assertThat(statusMap.get("Delivered")).isEqualTo(1L);
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getStatusName()).isIn("Canceled", "Delivered");
+        assertThat(result.get(0).getOrderCount()).isEqualTo(1L);
+        assertThat(result.get(1).getStatusName()).isIn("Canceled", "Delivered");
+        assertThat(result.get(1).getOrderCount()).isEqualTo(1L);
     }
 
     @Test
-    public void testGetAverageOrderValue_ReturnsCorrectAverage() {
+    public void testGetAverageOrderValue_ReturnsDTO() {
 
-        Record1<BigDecimal> result = analyticsRepository.getAverageOrderValue();
+        AverageOrderValueDTO result = analyticsService.getAverageOrderValue();
 
         BigDecimal expectedAverage = new BigDecimal("625.00");
-
-        assertThat(result.value1()).isEqualByComparingTo(expectedAverage);
+        assertThat(result.getAverageOrderValue()).isEqualByComparingTo(expectedAverage);
     }
 }

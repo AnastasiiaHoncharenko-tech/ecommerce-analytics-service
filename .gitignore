@@ -38,3 +38,6 @@ npm-debug.log*
 
 ### Operating System files ###
 .DS_Store
+
+### Enviroment files ###
+*.env
