@@ -155,7 +155,7 @@ public class AnalyticsServiceTest {
     @Test
     public void testGetTopSellingProducts_ReturnsListOfDTOs() {
 
-        List<TopSellingProductsDTO> result = analyticsService.getTopSellingProducts();
+        List<TopSellingProductsDTO> result = analyticsService.getTopSellingProducts(10);
 
         assertThat(result).hasSize(3);
 
@@ -172,7 +172,7 @@ public class AnalyticsServiceTest {
     @Test
     public void testGetTopSenders_ReturnsListOfDTOs() {
 
-        List<TopSendersDTO> result = analyticsService.getTopSenders();
+        List<TopSendersDTO> result = analyticsService.getTopSenders(10);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getEmail()).isEqualTo("test@user.com");

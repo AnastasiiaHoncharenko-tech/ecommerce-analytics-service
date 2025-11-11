@@ -167,7 +167,7 @@ public class AnalyticsRepositoryTest {
     @Test
     public void testGetTopSellingProducts_ReturnsProductsOrderedByQuantity() {
 
-        Result<Record3<Integer, String, BigDecimal>> result = analyticsRepository.getTopSellingProducts();
+        Result<Record3<Integer, String, BigDecimal>> result = analyticsRepository.getTopSellingProducts(10);
 
         assertThat(result).hasSize(3);
 
@@ -185,7 +185,7 @@ public class AnalyticsRepositoryTest {
     @Test
     public void testGetTopSpenders_ReturnsCustomersOrderedBySpend() {
 
-        Result<Record5<Integer, String, String, String, BigDecimal>> result = analyticsRepository.getTopSpenders();
+        Result<Record5<Integer, String, String, String, BigDecimal>> result = analyticsRepository.getTopSpenders(10);
 
         assertThat(result).hasSize(1);
 

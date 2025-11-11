@@ -20,8 +20,9 @@ import java.time.LocalDate;
 import java.util.NoSuchElementException;
 
 import static com.github.anastasiia.ecommerceanalyticsservice.jooq.Tables.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.http.MediaType;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.MOCK)
 @ActiveProfiles("test")
@@ -159,7 +160,11 @@ public class AnalyticsControllerTest {
     @Test
     public void testGetTopSellingProducts_ReturnsJsonArray() throws Exception {
 
-        mockMvc.perform(get("/analytics/topSellingProducts"))
+        String requestBody = "{\"limit\": 10}";
+
+        mockMvc.perform(post("/analytics/topSellingProducts")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(3))
@@ -174,7 +179,11 @@ public class AnalyticsControllerTest {
     @Test
     public void testGetTopSpenders_ReturnsJsonArray() throws Exception {
 
-        mockMvc.perform(get("/analytics/topSpenders"))
+        String requestBody = "{\"limit\": 10}";
+
+        mockMvc.perform(post("/analytics/topSpenders")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(1))

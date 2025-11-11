@@ -34,7 +34,7 @@ public class AnalyticsRepository {
                 .fetch();
     }
 
-    public Result<Record3<Integer, String, BigDecimal>> getTopSellingProducts() {
+    public Result<Record3<Integer, String, BigDecimal>> getTopSellingProducts(int limit) {
 
         Field<BigDecimal> totalProductQuantity = sum(ORDER_ITEMS.QUANTITY)
                 .as("totalProductQuantity");
@@ -44,11 +44,11 @@ public class AnalyticsRepository {
                 .join(ORDER_ITEMS).on(PRODUCTS.ID.eq(ORDER_ITEMS.PRODUCT_ID))
                 .groupBy(PRODUCTS.ID)
                 .orderBy(totalProductQuantity.desc())
-                .limit(10)
+                .limit(limit)
                 .fetch();
     }
 
-    public Result<Record5<Integer, String, String, String, BigDecimal>> getTopSpenders() {
+    public Result<Record5<Integer, String, String, String, BigDecimal>> getTopSpenders(int limit) {
 
         Field<BigDecimal> totalSpend = sum(ORDER_ITEMS.PRICE_AT_PURCHASE)
                 .as("totalSpend");
@@ -64,7 +64,7 @@ public class AnalyticsRepository {
                 .join(ORDER_ITEMS).on(ORDER_ITEMS.ORDER_ID.eq(ORDERS.ID))
                 .groupBy(CUSTOMERS.ID)
                 .orderBy(totalSpend.desc())
-                .limit(10)
+                .limit(limit)
                 .fetch();
     }
 

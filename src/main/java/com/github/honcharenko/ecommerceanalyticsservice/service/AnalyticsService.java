@@ -29,10 +29,10 @@ public class AnalyticsService {
                 ).collect(Collectors.toList());
     }
 
-    public List<TopSellingProductsDTO> getTopSellingProducts() {
+    public List<TopSellingProductsDTO> getTopSellingProducts(int limit) {
 
         return analyticsRepository
-                .getTopSellingProducts()
+                .getTopSellingProducts(limit)
                 .stream()
                 .map(
                         record -> new TopSellingProductsDTO(
@@ -43,9 +43,9 @@ public class AnalyticsService {
                 ).collect(Collectors.toList());
     }
 
-    public List<TopSendersDTO> getTopSenders() {
+    public List<TopSendersDTO> getTopSenders(int limit) {
         return analyticsRepository
-                .getTopSpenders()
+                .getTopSpenders(limit)
                 .stream()
                 .map(record -> new TopSendersDTO(
                         record.value1(),

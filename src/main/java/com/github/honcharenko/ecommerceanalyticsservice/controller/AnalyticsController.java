@@ -2,11 +2,8 @@ package com.github.honcharenko.ecommerceanalyticsservice.controller;
 
 import com.github.honcharenko.ecommerceanalyticsservice.DTO.*;
 import com.github.honcharenko.ecommerceanalyticsservice.service.AnalyticsService;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -24,14 +21,14 @@ public class AnalyticsController {
         return analyticsService.getSalesByCategory();
     }
 
-    @GetMapping("/topSellingProducts")
-    public List<TopSellingProductsDTO> getTopSellingProducts(){
-        return analyticsService.getTopSellingProducts();
+    @PostMapping("/topSellingProducts")
+    public List<TopSellingProductsDTO> getTopSellingProducts(@RequestBody LimitRequestDTO request){
+        return analyticsService.getTopSellingProducts(request.getLimit());
     }
 
-    @GetMapping("/topSpenders")
-    public List<TopSendersDTO> getTopSpenders(){
-        return analyticsService.getTopSenders();
+    @PostMapping("/topSpenders")
+    public List<TopSendersDTO> getTopSpenders(@RequestBody LimitRequestDTO request){
+        return analyticsService.getTopSenders(request.getLimit());
     }
 
     @GetMapping("/statusSummary")
