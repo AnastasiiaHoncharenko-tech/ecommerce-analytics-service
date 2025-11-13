@@ -8,8 +8,8 @@
 		<version>3.5.7</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.github.honcharenko</groupId>
-	<artifactId>ecommerce_analytics_service_demo</artifactId>
+	<groupId>com.ecommerce</groupId>
+	<artifactId>analytics-service</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>Ecommerce Analytics Service</name>
 	<description>A Spring Boot API for Ecommerce Analytics Service</description>
@@ -47,6 +47,12 @@
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
 		</dependency>
 
         <dependency>
@@ -92,6 +98,14 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>
+							<groupId>org.projectlombok</groupId>
+							<artifactId>lombok</artifactId>
+						</exclude>
+					</excludes>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
@@ -164,7 +178,7 @@
 								</database>
 
 								<target>
-									<packageName>com.github.anastasiia.ecommerceanalyticsservice.jooq</packageName>
+									<packageName>com.ecommerce.analytics.jooq</packageName>
 
 									<directory>src/main/java</directory>
 								</target>

@@ -4,10 +4,11 @@
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.7-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![jOOQ](https://img.shields.io/badge/jOOQ-3.19.27-blue.svg)](https://www.jooq.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue.svg)](https://www.postgresql.org/)
+[![Lombok](https://img.shields.io/badge/Lombok-enabled-red.svg)](https://projectlombok.org/)
 [![Docker](https://img.shields.io/badge/Docker-enabled-blue.svg)](https://www.docker.com/)
 [![License](https://img.shields.io/badge/License-Educational-lightgrey.svg)]()
 
-A Spring Boot REST API that provides analytics insights for an e-commerce platform. The service uses jOOQ for type-safe SQL queries and PostgreSQL for data persistence.
+A Spring Boot REST API that provides analytics insights for an e-commerce platform. The service uses jOOQ for type-safe SQL queries, Lombok for reducing boilerplate code, and PostgreSQL for data persistence.
 
 ---
 
@@ -30,19 +31,24 @@ A Spring Boot REST API that provides analytics insights for an e-commerce platfo
 - **Sales Analytics by Category**: Get total sales grouped by product category
 - **Top Selling Products**: Identify products with the highest quantity sold (customizable limit)
 - **Top Spenders**: Find customers with the highest total spending (customizable limit)
+- **Product Ranking by Category**: Get top-ranked products within each category using window functions
 - **Order Status Summary**: View order counts grouped by status
 - **Average Order Value**: Calculate the average value across all orders
-- **Flexible Query Limits**: Client-controlled result limits with built-in validation (default: 10, max: 100)
+- **Flexible Query Limits**: Client-controlled result limits with centralized validation (default: 10, max: 100)
+- **API Versioning**: Clean API structure with `/v1/` prefix
+- **RESTful Endpoints**: Kebab-case endpoint naming for consistency
 - **API Key Authentication**: Secure endpoints with API key-based authentication
 - **Automated Data Seeding**: Generate realistic test data using JavaFaker
 - **Dockerized Deployment**: Run the entire stack with Docker Compose
+- **Clean Code Architecture**: Constants management, validation utilities, and Lombok integration
 
 ## Technology Stack
 
 - **Java 21**: Latest LTS version of Java
 - **Spring Boot 3.5.7**: Modern Spring Boot framework
-- **jOOQ 3.19.27**: Type-safe SQL query builder
+- **jOOQ 3.19.27**: Type-safe SQL query builder with window functions support
 - **PostgreSQL 16**: Relational database
+- **Lombok**: Reduces boilerplate code in DTOs and entities
 - **Docker & Docker Compose**: Containerization
 - **Maven**: Dependency management and build tool
 - **Testcontainers**: Integration testing with real database
@@ -59,15 +65,18 @@ A Spring Boot REST API that provides analytics insights for an e-commerce platfo
 ## Project Structure
 
 ```
-ecommerce_analytics_service_demo/
+analytics-service/
 ├── src/
 │   ├── main/
-│   │   ├── java/com/github/honcharenko/ecommerceanalyticsservice/
+│   │   ├── java/com/ecommerce/analytics/
 │   │   │   ├── config/              # Security and API key configuration
+│   │   │   ├── constants/           # Application constants
 │   │   │   ├── controller/          # REST API controllers
-│   │   │   ├── DTO/                 # Data Transfer Objects
+│   │   │   ├── dto/                 # Data Transfer Objects (Lombok)
+│   │   │   ├── jooq/                # Auto-generated jOOQ classes
 │   │   │   ├── repository/          # jOOQ repositories
 │   │   │   ├── service/             # Business logic services
+│   │   │   ├── util/                # Validation utilities
 │   │   │   ├── DataSeeder.java      # Test data generator
 │   │   │   └── EcommerceAnalyticsServiceApplication.java
 │   │   └── resources/
@@ -129,7 +138,7 @@ The application will be available at **http://localhost:8080**
 docker ps
 
 # Test an endpoint
-curl -H "X-API-Key: your-api-key-here" http://localhost:8080/analytics/salesByCategory
+curl -H "X-API-Key: your-api-key-here" http://localhost:8080/v1/analytics/sales-by-category
 ```
 
 You should see:
@@ -144,11 +153,11 @@ You should see:
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
-| `/analytics/salesByCategory` | GET | Get total sales grouped by product category |
-| `/analytics/topSellingProducts` | POST | Get products sorted by quantity sold (with customizable limit) |
-| `/analytics/topSpenders` | POST | Get customers with highest total spending (with customizable limit) |
-| `/analytics/statusSummary` | GET | Get order counts grouped by status |
-| `/analytics/averageOrderValue` | GET | Calculate average value across all orders |
+| `/v1/analytics/sales-by-category` | GET | Get total sales grouped by product category |
+| `/v1/analytics/top-selling-products` | POST | Get products sorted by quantity sold (with customizable limit) |
+| `/v1/analytics/top-spenders` | POST | Get customers with highest total spending (with customizable limit) |
+| `/v1/analytics/status-summary` | GET | Get order counts grouped by status |
+| `/v1/analytics/average-order-value` | GET | Calculate average value across all orders |
 
 ---
 
@@ -161,7 +170,7 @@ Get total sales grouped by product category.
 
 ```bash
 curl -H "X-API-Key: the-most-secret-password" \
-  http://localhost:8080/analytics/salesByCategory
+  http://localhost:8080/v1/analytics/sales-by-category
 ```
 
 **Response:**
@@ -193,7 +202,7 @@ curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{"limit": 10}' \
-  http://localhost:8080/analytics/topSellingProducts
+  http://localhost:8080/v1/analytics/top-selling-products
 ```
 
 **Request Examples:**
@@ -203,21 +212,21 @@ curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{"limit": 5}' \
-  http://localhost:8080/analytics/topSellingProducts
+  http://localhost:8080/v1/analytics/top-selling-products
 
 # Get top 50 products
 curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{"limit": 50}' \
-  http://localhost:8080/analytics/topSellingProducts
+  http://localhost:8080/v1/analytics/top-selling-products
 
 # Use default (10) - empty body or limit: 10
 curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{}' \
-  http://localhost:8080/analytics/topSellingProducts
+  http://localhost:8080/v1/analytics/top-selling-products
 ```
 
 **Response:**
@@ -255,7 +264,7 @@ curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{"limit": 10}' \
-  http://localhost:8080/analytics/topSpenders
+  http://localhost:8080/v1/analytics/top-spenders
 ```
 
 **Request Examples:**
@@ -265,14 +274,14 @@ curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{"limit": 20}' \
-  http://localhost:8080/analytics/topSpenders
+  http://localhost:8080/v1/analytics/top-spenders
 
 # Use default (10)
 curl -X POST \
   -H "X-API-Key: the-most-secret-password" \
   -H "Content-Type: application/json" \
   -d '{}' \
-  http://localhost:8080/analytics/topSpenders
+  http://localhost:8080/v1/analytics/top-spenders
 ```
 
 **Response:**
@@ -300,7 +309,7 @@ Get order counts grouped by status.
 
 ```bash
 curl -H "X-API-Key: the-most-secret-password" \
-  http://localhost:8080/analytics/statusSummary
+  http://localhost:8080/v1/analytics/status-summary
 ```
 
 **Response:**
@@ -326,7 +335,7 @@ Calculate the average value across all orders.
 
 ```bash
 curl -H "X-API-Key: the-most-secret-password" \
-  http://localhost:8080/analytics/averageOrderValue
+  http://localhost:8080/v1/analytics/average-order-value
 ```
 
 **Response:**
@@ -342,6 +351,10 @@ curl -H "X-API-Key: the-most-secret-password" \
 
 ## Database Schema
 
+<p align="center">
+  <img src="docs/images/db-schema.png" alt="Database Schema Diagram" width="800"/>
+</p>
+
 The application uses the following database tables:
 
 - **order_statuses**: Order status definitions (Processing, Shipped, Delivered, etc.)
@@ -349,6 +362,13 @@ The application uses the following database tables:
 - **products**: Product catalog (name, price, category)
 - **orders**: Order records with customer and status references
 - **order_items**: Line items for each order with quantity and price at purchase
+
+### Relationships
+
+- `orders.customer_id` → `customers.id`
+- `orders.status_id` → `order_statuses.id`
+- `order_items.order_id` → `orders.id`
+- `order_items.product_id` → `products.id`
 
 The schema is automatically initialized when the PostgreSQL container starts using `/docker-entrypoint-initdb.d/init.sql`.
 
@@ -361,7 +381,7 @@ The schema is automatically initialized when the PostgreSQL container starts usi
 Integration tests use Testcontainers to spin up a real PostgreSQL instance:
 
 ```bash
-mvn test
+./mvnw test
 ```
 
 Tests include:
@@ -384,20 +404,20 @@ Tests use a separate profile (`application-test.properties`) and initialize the 
 docker run -d \
   --name postgres-dev \
   -p 5432:5432 \
-  -e POSTGRES_USER=anastasiagoncarenko \
-  -e POSTGRES_PASSWORD=postgres123 \
+  -e POSTGRES_USER=your_user \
+  -e POSTGRES_PASSWORD=your_password \
   -e POSTGRES_DB=ecommerce_analytics_db \
   postgres:16
 ```
 
 2. Initialize the database schema:
 ```bash
-psql -h localhost -U anastasiagoncarenko -d ecommerce_analytics_db -f src/main/java/init_scheme.sql
+psql -h localhost -U your_user -d ecommerce_analytics_db -f src/main/java/init_scheme.sql
 ```
 
 3. Run the application:
 ```bash
-mvn spring-boot:run
+./mvnw spring-boot:run
 ```
 
 ### Regenerating jOOQ Code
@@ -406,13 +426,49 @@ When the database schema changes, regenerate jOOQ classes:
 
 ```bash
 # Make sure PostgreSQL is running with the latest schema
-mvn clean install -Pjooq-codegen
+./mvnw clean compile -Pjooq-codegen
 ```
 
 This runs the `jooq-codegen` Maven profile which:
 1. Connects to your database
 2. Introspects the schema
-3. Generates type-safe Java classes in `src/main/java/com/github/anastasiia/ecommerceanalyticsservice/jooq/`
+3. Generates type-safe Java classes in `src/main/java/com/ecommerce/analytics/jooq/`
+
+**Generated Files Location:**
+```
+src/main/java/com/ecommerce/analytics/jooq/
+├── DefaultCatalog.java
+├── Keys.java
+├── Public.java
+├── Tables.java                    # Main entry point
+└── tables/
+    ├── Customers.java
+    ├── OrderItems.java
+    ├── OrderStatuses.java
+    ├── Orders.java
+    ├── Products.java
+    └── records/
+        └── ... (Record classes)
+```
+
+### Build Commands
+
+```bash
+# Generate JOOQ tables
+./mvnw clean compile -Pjooq-codegen
+
+# Run the application
+./mvnw spring-boot:run
+
+# Build JAR package
+./mvnw clean package -DskipTests
+
+# Run the JAR
+java -jar target/analytics-service-0.0.1-SNAPSHOT.jar
+
+# Run tests
+./mvnw test
+```
 
 ### Viewing Logs
 
@@ -422,6 +478,9 @@ docker logs -f analytics-service
 
 # Follow PostgreSQL logs
 docker logs -f analytics-postgres
+
+# View all logs
+docker-compose logs -f
 ```
 
 ---
@@ -484,6 +543,33 @@ docker ps
 docker logs analytics-service
 docker logs analytics-postgres
 ```
+
+### Docker Build Issues
+
+If the Docker build fails with JAR file not found:
+```bash
+# Clean build
+./mvnw clean package -DskipTests
+
+# Rebuild Docker image
+docker-compose build --no-cache
+
+# Start services
+docker-compose up
+```
+
+## Recent Updates
+
+### Version 2.0 - Code Restructuring
+- **Package Restructure**: Migrated from `com.github.*` to `com.ecommerce.analytics`
+- **Lombok Integration**: Added Lombok to reduce boilerplate in DTOs
+- **API Versioning**: All endpoints now use `/v1/analytics/` prefix
+- **Kebab-case Endpoints**: Consistent RESTful naming (e.g., `/top-selling-products`)
+- **Constants Management**: Centralized constants in `AnalyticsConstants` class
+- **Validation Utilities**: Extracted validation logic to `ValidationUtils`
+- **Code Quality**: Replaced magic values and improved semantic naming
+- **Window Functions**: Added advanced SQL queries with window functions
+- **Artifact Rename**: Changed artifact ID to `analytics-service`
 
 ## License
 

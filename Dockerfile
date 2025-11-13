@@ -7,6 +7,6 @@ RUN mvn clean package -DskipTests
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-COPY --from=build /app/target/ecommerce_analytics_service_demo-0.0.1-SNAPSHOT.jar app.jar
+COPY --from=build /app/target/analytics-service-0.0.1-SNAPSHOT.jar app.jar
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]

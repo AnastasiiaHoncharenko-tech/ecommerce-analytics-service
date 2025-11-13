@@ -39,5 +39,11 @@ npm-debug.log*
 ### Operating System files ###
 .DS_Store
 
-### Enviroment files ###
+### Environment files ###
 *.env
+
+### Maven wrapper ###
+mvnw.cmd
+
+### Git attributes ###
+.gitattributes
